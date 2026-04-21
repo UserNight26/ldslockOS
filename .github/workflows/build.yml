@@ -11,48 +11,40 @@ jobs:
       - name: Install Compilers and Tools
         run: |
           sudo apt update
-          sudo apt install -y live-build nasm mono-devel build-essential
+          sudo apt install -y live-build nasm mono-devel build-essential dirmngr
 
       - name: Compile OS Components
         run: |
-          # Create binaries directory
+          # 1. CRIAR A PASTA DE BINÁRIOS (O erro estava aqui!)
           mkdir -p src/bin
           
-          # 1. Compile Assembly (Boot/Low Level)
-          # (Note: Se os arquivos abaixo não existirem exatamente nesses caminhos, a build falhará)
-          if [ -f src/boot/header.asm ]; then nasm -f elf64 src/boot/header.asm -o src/bin/header.o; fi
+          # 2. COMPILAR ASSEMBLY
+          nasm -f elf64 src/boot/header.asm -o src/bin/header.o
           
-          # 2. Compile C++ (Kernel Extensions)
-          if [ -f src/kernel_ext/info.cpp ]; then g++ -c src/kernel_ext/info.cpp -o src/bin/info.o; fi
+          # 3. COMPILAR C++
+          g++ -c src/kernel_ext/info.cpp -o src/bin/info.o
           
-          # 3. Compile C# (Security Manager)
+          # 4. COMPILAR C# (LOCK MANAGER)
           mcs src/tools/Manager.cs -out:src/bin/LockManager.exe
 
       - name: Build ldslockOS ISO
         run: |
           mkdir build && cd build
-          
-          # Configure for Debian Testing
           lb config --distribution testing \
                     --architectures amd64 \
                     --bootloader grub-pc \
                     --archive-areas "main contrib non-free non-free-firmware"
 
-          # 1. Languages and Core
+          # Configurando pacotes e instalador
           mkdir -p config/package-lists
           echo "locales console-setup" > config/package-lists/languages.list.chroot
-          
-          # 2. Kernel, Runtime and UI
           echo "linux-image-amd64 mono-runtime i3-wm i3status rofi xorg" > config/package-lists/core.list.chroot
-          
-          # 3. UI and Installer (Calamares Included)
           echo "gnome-control-center gnome-settings-daemon network-manager-gnome calamares-settings-debian calamares" > config/package-lists/ui.list.chroot
 
-          # 4. Integrate your compiled C# Manager into the OS
+          # Inserindo o seu Gerenciador C# dentro da ISO
           mkdir -p config/includes.chroot/usr/local/bin
           cp ../src/bin/LockManager.exe config/includes.chroot/usr/local/bin/
           
-          # Run the build
           sudo lb build
 
       - name: Release ISO Artifact
