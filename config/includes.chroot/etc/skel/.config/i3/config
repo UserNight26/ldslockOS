@@ -1,0 +1,17 @@
+# ldslockOS Taskbar (Top Position)
+bar {
+    position top
+    status_command i3status
+    
+    colors {
+        background #000000
+        statusline #ffffff
+        separator  #666666
+
+        # Different from Windows: clean and flat colors
+        focused_workspace  #4c7899 #285577 #ffffff
+        active_workspace   #333333 #5f676a #ffffff
+        inactive_workspace #333333 #222222 #888888
+        urgent_workspace   #2f343a #900000 #ffffff
+    }
+}
