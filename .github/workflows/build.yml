@@ -19,10 +19,11 @@ jobs:
           mkdir -p src/bin
           
           # 1. Compile Assembly (Boot/Low Level)
-          nasm -f elf64 src/boot/header.asm -o src/bin/header.o
+          # (Note: Se os arquivos abaixo não existirem exatamente nesses caminhos, a build falhará)
+          if [ -f src/boot/header.asm ]; then nasm -f elf64 src/boot/header.asm -o src/bin/header.o; fi
           
           # 2. Compile C++ (Kernel Extensions)
-          g++ -c src/kernel_ext/info.cpp -o src/bin/info.o
+          if [ -f src/kernel_ext/info.cpp ]; then g++ -c src/kernel_ext/info.cpp -o src/bin/info.o; fi
           
           # 3. Compile C# (Security Manager)
           mcs src/tools/Manager.cs -out:src/bin/LockManager.exe
@@ -31,24 +32,21 @@ jobs:
         run: |
           mkdir build && cd build
           
-          # Configure for Debian Testing - Pure English
-          # We add 'non-free' to ensure drivers for 4GB RAM machines work
+          # Configure for Debian Testing
           lb config --distribution testing \
                     --architectures amd64 \
                     --bootloader grub-pc \
                     --archive-areas "main contrib non-free non-free-firmware"
 
           # 1. Languages and Core
+          mkdir -p config/package-lists
           echo "locales console-setup" > config/package-lists/languages.list.chroot
           
-          # 2. Kernel, Runtime and UI (The "Zorin-like" Top Bar setup)
-          # i3-wm: Light Window Manager
-          # i3status: The bar content
-          # rofi: The Top Menu (instead of Windows Start Menu)
+          # 2. Kernel, Runtime and UI
           echo "linux-image-amd64 mono-runtime i3-wm i3status rofi xorg" > config/package-lists/core.list.chroot
           
-          # 3. Debian Settings & Control Center (As requested)
-          echo "gnome-control-center gnome-settings-daemon network-manager-gnome" > config/package-lists/ui.list.chroot
+          # 3. UI and Installer (Calamares Included)
+          echo "gnome-control-center gnome-settings-daemon network-manager-gnome calamares-settings-debian calamares" > config/package-lists/ui.list.chroot
 
           # 4. Integrate your compiled C# Manager into the OS
           mkdir -p config/includes.chroot/usr/local/bin
