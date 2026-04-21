@@ -1,0 +1,15 @@
+set $mod Mod4
+
+# BAR ON TOP
+bar {
+    position top
+    status_command i3status
+}
+
+# DEBIAN SETTINGS
+bindsym $mod+c exec gnome-control-center
+exec --no-startup-id /usr/libexec/gnome-settings-daemon
+
+# SHORTCUTS
+bindsym $mod+d exec rofi -show run
+bindsym $mod+Return exec i3-terminal
