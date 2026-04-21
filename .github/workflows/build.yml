@@ -1,0 +1,45 @@
+name: ldslockOS Build Factory
+on: [push]
+
+jobs:
+  generate-iso:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone ldslockOS Source
+        uses: actions/checkout@v4
+
+      - name: Install Compilers and Tools
+        run: |
+          sudo apt update
+          sudo apt install -y live-build nasm mono-devel build-essential
+
+      - name: Compile OS Components
+        run: |
+          # 1. Compile Assembly (Boot/Low Level)
+          nasm -f elf64 src/boot/header.asm -o header.o
+          
+          # 2. Compile C++ (Kernel Extensions)
+          g++ -c src/kernel_ext/info.cpp -o info.o
+          
+          # 3. Compile C# (Security Manager)
+          mcs src/tools/Manager.cs -out:LockManager.exe
+
+      - name: Build ldslockOS ISO
+        run: |
+          mkdir build && cd build
+          # Configure for Debian Testing - Pure English
+          lb config --distribution testing --architectures amd64 --bootloader grub-pc
+          
+          # Define English as the only language
+          echo "locales" > config/package-lists/languages.list.chroot
+          
+          # Add the Kernel and Mono Runtime for your C# code
+          echo "linux-image-amd64 mono-runtime i3-wm" > config/package-lists/core.list.chroot
+          
+          sudo lb build
+
+      - name: Release ISO Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ldslockOS-Alpha-Build
+          path: build/*.iso
