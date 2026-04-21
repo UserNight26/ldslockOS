@@ -1,15 +1,26 @@
+# ldslockOS - Terminal & Dynamic Taskbar
 set $mod Mod4
+font pango:monospace 10
 
-# BAR ON TOP
+# BARRA NO TOPO (Mostra a lista de apps com ícone e nome)
 bar {
     position top
     status_command i3status
+    # Isso faz a barra mostrar as janelas abertas (os apps que você baixar)
+    tray_output primary
 }
 
-# DEBIAN SETTINGS
+# CONFIGURAÇÃO DAS JANELAS
+# Faz com que os apps novos abram como janelas normais
+for_window [class=".*"] border normal 2
+
+# ATALHOS
+# Abre o Terminal (Seu app principal)
+bindsym $mod+Return exec i3-terminal
+
+# Abre o Painel de Controle do Debian
 bindsym $mod+c exec gnome-control-center
 exec --no-startup-id /usr/libexec/gnome-settings-daemon
 
-# SHORTCUTS
-bindsym $mod+d exec rofi -show run
-bindsym $mod+Return exec i3-terminal
+# Inicia o Terminal automaticamente ao ligar (opcional)
+exec --no-startup-id i3-terminal
