@@ -1,31 +1,26 @@
-- name: Build ldslockOS ISO
-        run: |
         - name: Build ldslockOS ISO
         run: |
-          # Limpeza profunda para deletar configurações velhas do Ubuntu
+          # Limpando tudo para não sobrar rastro do Ubuntu
           sudo lb clean --all
-          rm -rf config/
           
           mkdir -p build && cd build
           
-          # Configuração forçando o Debian
+          # Forçando o modo Debian e os mirrors certos
           lb config --distribution testing \
                     --architectures amd64 \
                     --bootloader grub-pc \
                     --mode debian \
                     --mirror-bootstrap "http://deb.debian.org/debian/" \
-                    --mirror-chroot "http://deb.debian.org/debian/" \
-                    --mirror-binary "http://deb.debian.org/debian/" \
                     --archive-areas "main contrib non-free non-free-firmware"
 
-          # Criando as listas de pacotes (sem o sinal de ">" cortado)
+          # Criando as listas de pacotes
           mkdir -p config/package-lists
           echo "linux-image-amd64 mono-runtime i3-wm xorg rofi" > config/package-lists/my-os.list.chroot
           echo "calamares calamares-settings-debian" > config/package-lists/installer.list.chroot
 
-          # Inserindo seu Manager
+          # Colocando seu arquivo .exe no lugar certo
           mkdir -p config/includes.chroot/usr/bin
           cp ../src/bin/LockManager.exe config/includes.chroot/usr/bin/
 
-          # Rodando o build
+          # Rodando a construção final
           sudo lb build
