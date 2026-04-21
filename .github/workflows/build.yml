@@ -1,54 +1,24 @@
-name: ldslockOS Build Factory
-on: [push]
-
-jobs:
-  generate-iso:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Clone ldslockOS Source
-        uses: actions/checkout@v4
-
-      - name: Install Compilers and Tools
+- name: Build ldslockOS ISO
         run: |
-          sudo apt update
-          sudo apt install -y live-build nasm mono-devel build-essential dirmngr
-
-      - name: Compile OS Components
-        run: |
-          # 1. CRIAR A PASTA DE BINÁRIOS (O erro estava aqui!)
-          mkdir -p src/bin
+          mkdir -p build && cd build
           
-          # 2. COMPILAR ASSEMBLY
-          nasm -f elf64 src/boot/header.asm -o src/bin/header.o
-          
-          # 3. COMPILAR C++
-          g++ -c src/kernel_ext/info.cpp -o src/bin/info.o
-          
-          # 4. COMPILAR C# (LOCK MANAGER)
-          mcs src/tools/Manager.cs -out:src/bin/LockManager.exe
-
-      - name: Build ldslockOS ISO
-        run: |
-          mkdir build && cd build
+          # Forçando o mirror oficial do Debian para não usar o do Ubuntu
           lb config --distribution testing \
                     --architectures amd64 \
                     --bootloader grub-pc \
+                    --mirror-bootstrap "http://deb.debian.org/debian/" \
+                    --mirror-chroot "http://deb.debian.org/debian/" \
+                    --mirror-binary "http://deb.debian.org/debian/" \
                     --archive-areas "main contrib non-free non-free-firmware"
 
-          # Configurando pacotes e instalador
+          # Criando as listas de pacotes
           mkdir -p config/package-lists
-          echo "locales console-setup" > config/package-lists/languages.list.chroot
-          echo "linux-image-amd64 mono-runtime i3-wm i3status rofi xorg" > config/package-lists/core.list.chroot
-          echo "gnome-control-center gnome-settings-daemon network-manager-gnome calamares-settings-debian calamares" > config/package-lists/ui.list.chroot
+          echo "linux-image-amd64 mono-runtime i3-wm xorg rofi" > config/package-lists/my-os.list.chroot
+          echo "calamares calamares-settings-debian" > config/package-lists/installer.list.chroot
 
-          # Inserindo o seu Gerenciador C# dentro da ISO
-          mkdir -p config/includes.chroot/usr/local/bin
-          cp ../src/bin/LockManager.exe config/includes.chroot/usr/local/bin/
+          # Inserindo seu Manager
+          mkdir -p config/includes.chroot/usr/bin
+          cp ../src/bin/LockManager.exe config/includes.chroot/usr/bin/
           
+          # Rodando o build com sudo
           sudo lb build
-
-      - name: Release ISO Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ldslockOS-Alpha-Build
-          path: build/*.iso
