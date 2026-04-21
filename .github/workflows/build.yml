@@ -15,27 +15,46 @@ jobs:
 
       - name: Compile OS Components
         run: |
+          # Create binaries directory
+          mkdir -p src/bin
+          
           # 1. Compile Assembly (Boot/Low Level)
-          nasm -f elf64 src/boot/header.asm -o header.o
+          nasm -f elf64 src/boot/header.asm -o src/bin/header.o
           
           # 2. Compile C++ (Kernel Extensions)
-          g++ -c src/kernel_ext/info.cpp -o info.o
+          g++ -c src/kernel_ext/info.cpp -o src/bin/info.o
           
           # 3. Compile C# (Security Manager)
-          mcs src/tools/Manager.cs -out:LockManager.exe
+          mcs src/tools/Manager.cs -out:src/bin/LockManager.exe
 
       - name: Build ldslockOS ISO
         run: |
           mkdir build && cd build
+          
           # Configure for Debian Testing - Pure English
-          lb config --distribution testing --architectures amd64 --bootloader grub-pc
+          # We add 'non-free' to ensure drivers for 4GB RAM machines work
+          lb config --distribution testing \
+                    --architectures amd64 \
+                    --bootloader grub-pc \
+                    --archive-areas "main contrib non-free non-free-firmware"
+
+          # 1. Languages and Core
+          echo "locales console-setup" > config/package-lists/languages.list.chroot
           
-          # Define English as the only language
-          echo "locales" > config/package-lists/languages.list.chroot
+          # 2. Kernel, Runtime and UI (The "Zorin-like" Top Bar setup)
+          # i3-wm: Light Window Manager
+          # i3status: The bar content
+          # rofi: The Top Menu (instead of Windows Start Menu)
+          echo "linux-image-amd64 mono-runtime i3-wm i3status rofi xorg" > config/package-lists/core.list.chroot
           
-          # Add the Kernel and Mono Runtime for your C# code
-          echo "linux-image-amd64 mono-runtime i3-wm" > config/package-lists/core.list.chroot
+          # 3. Debian Settings & Control Center (As requested)
+          echo "gnome-control-center gnome-settings-daemon network-manager-gnome" > config/package-lists/ui.list.chroot
+
+          # 4. Integrate your compiled C# Manager into the OS
+          mkdir -p config/includes.chroot/usr/local/bin
+          cp ../src/bin/LockManager.exe config/includes.chroot/usr/local/bin/
           
+          # Run the build
           sudo lb build
 
       - name: Release ISO Artifact
